@@ -2,9 +2,17 @@ var sheet = document.createElement('style')
 sheet.innerHTML = `
   .finder-highlight {
     transition: background 0.15s ease-in-out, color 0.15s ease-in-out;
-    background: #ffeb00;
-    border-radius: 0.2em;
-    color: black;
+    background: #ffeb00 !important;
+    border-radius: 0.2em !important;
+    color: black !important;
+  }
+
+  .finder-highlight:focus {
+    color: black !important;
+    background: #ffeb00 !important;
+    background-color: #ffeb00 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2pt #bbab38 !important;
   }
 
   #finder-helper {
@@ -44,13 +52,20 @@ const debounce = (callback, delay) => {
 
 class Finder {
   constructor() {
-    this.query = ''
-    this.highlightedElements = []
-    this.registerHandlers()
-    this.injectHelper()
     this.HOTKEY = 'Control'
     this.KEY_IGNORE_LIST = ['Meta', 'Shift', 'Clear']
-    this.highlight = debounce(() => this._highlight(), 250)
+    this.DEBOUNCE_DELAY_MS = 250
+    this.query = ''
+    this.highlightedElements = []
+    this.highlight = debounce(() => this._highlight(), this.DEBOUNCE_DELAY_MS)
+    this.tabIndex = 0
+
+    this.initialize()
+  }
+
+  initialize() {
+    this.registerHandlers()
+    this.injectHelper()
   }
 
   _highlight() {
@@ -61,24 +76,38 @@ class Finder {
         .filter(e => e.innerText.trim() && e.innerText.trim().toLowerCase().includes(this.query))
 
       this.highlightedElements.forEach(e => e.classList.add('finder-highlight'))
+      this.initialFocus()
     }
   }
 
   clearQuery() {
-    this.query = ''
+    // this.clearFocus()
     this.clearHighlights()
+    this.query = ''
   }
 
   clearHighlights() {
-    this.highlightedElements.forEach(e => e.classList.remove('finder-highlight'))
+    this.highlightedElements.forEach(e => {
+      e.classList.remove('finder-highlight')
+      e.classList.remove('finder-focus')
+    })
     this.highlightedElements = []
   }
 
   registerHandlers() {
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' || (event.key === 'Backspace' && !event.ctrlKey)) {
         this.clearQuery()
         this.render()
+        return
+      }
+      if (event.key === 'Tab' && this.highlightedElements.length > 0) {
+        event.preventDefault()
+        if (event.shiftKey) {
+          this.focusNext(event)
+        } else {
+          this.focusPrevious(event)
+        }
         return
       }
       if (event.ctrlKey) {
@@ -100,13 +129,36 @@ class Finder {
         return
       }
     })
+  }
 
-    document.addEventListener('keyup', event => {
-      // if (event.key === this.HOTKEY) {
-      //   this.query = ''
-      //   this.render()
-      // }
-    })
+  initialFocus() {
+    this.highlightedElements[0]?.focus()
+    this.tabIndex = 0
+  }
+
+  focusPrevious() {
+    if (this.tabIndex >= this.highlightedElements.length - 1) {
+      this.tabIndex = 0
+    } else {
+      this.tabIndex += 1
+    }
+    this.highlightedElements[this.tabIndex]?.focus()
+  }
+
+  focusNext() {
+    if (this.tabIndex - 1 < 0) {
+      this.tabIndex = this.highlightedElements.length - 1
+    } else {
+      this.tabIndex -= 1
+    }
+    this.highlightedElements[this.tabIndex]?.focus()
+  }
+
+  clearFocus() {
+    if (this.highlightedElements.includes(document.activeElement)) {
+      document.activeElement.blur()
+    }
+    this.tabIndex = 0
   }
 
   injectHelper() {
