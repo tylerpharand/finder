@@ -54,6 +54,7 @@ class Finder {
   constructor() {
     this.HOTKEY = 'Control'
     this.KEY_IGNORE_LIST = ['Meta', 'Shift', 'Clear']
+    this.FOCUSABLE_ELEMENTS_QUERY = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     this.DEBOUNCE_DELAY_MS = 250
     this.query = ''
     this.highlightedElements = []
@@ -68,30 +69,12 @@ class Finder {
     this.injectHelper()
   }
 
-  _highlight() {
-    this.clearHighlights()
-
-    if (this.query) {
-      this.highlightedElements = [...document.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
-        .filter(e => e.innerText.trim() && e.innerText.trim().toLowerCase().includes(this.query))
-
-      this.highlightedElements.forEach(e => e.classList.add('finder-highlight'))
-      this.initialFocus()
-    }
-  }
-
-  clearQuery() {
-    // this.clearFocus()
-    this.clearHighlights()
-    this.query = ''
-  }
-
-  clearHighlights() {
-    this.highlightedElements.forEach(e => {
-      e.classList.remove('finder-highlight')
-      e.classList.remove('finder-focus')
-    })
-    this.highlightedElements = []
+  injectHelper() {
+    const helper = document.createElement('div');
+    helper.id = 'finder-helper'
+    document.body.appendChild(helper);
+    this.helper = helper
+    this.render()
   }
 
   registerHandlers() {
@@ -131,18 +114,39 @@ class Finder {
     })
   }
 
+  _highlight() {
+    this.clearHighlights()
+
+    if (this.query) {
+      this.highlightedElements = [...document.querySelectorAll(this.FOCUSABLE_ELEMENTS_QUERY)]
+        .filter(e => (
+          e.innerText.trim() &&
+          e.innerText.trim()
+            .toLowerCase()
+            .includes(this.query)
+        ))
+
+      this.highlightedElements.forEach(e => e.classList.add('finder-highlight'))
+      this.initialFocus()
+    }
+  }
+
+  clearQuery() {
+    this.clearHighlights()
+    this.query = ''
+  }
+
+  clearHighlights() {
+    this.highlightedElements.forEach(e => {
+      e.classList.remove('finder-highlight')
+      e.classList.remove('finder-focus')
+    })
+    this.highlightedElements = []
+  }
+
   initialFocus() {
     this.highlightedElements[0]?.focus()
     this.tabIndex = 0
-  }
-
-  focusPrevious() {
-    if (this.tabIndex >= this.highlightedElements.length - 1) {
-      this.tabIndex = 0
-    } else {
-      this.tabIndex += 1
-    }
-    this.highlightedElements[this.tabIndex]?.focus()
   }
 
   focusNext() {
@@ -154,19 +158,13 @@ class Finder {
     this.highlightedElements[this.tabIndex]?.focus()
   }
 
-  clearFocus() {
-    if (this.highlightedElements.includes(document.activeElement)) {
-      document.activeElement.blur()
+  focusPrevious() {
+    if (this.tabIndex >= this.highlightedElements.length - 1) {
+      this.tabIndex = 0
+    } else {
+      this.tabIndex += 1
     }
-    this.tabIndex = 0
-  }
-
-  injectHelper() {
-    const helper = document.createElement('div');
-    helper.id = 'finder-helper'
-    document.body.appendChild(helper);
-    this.helper = helper
-    this.render()
+    this.highlightedElements[this.tabIndex]?.focus()
   }
 
   render() {
