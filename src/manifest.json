@@ -1,6 +1,7 @@
 {
   "manifest_version": 2,
-  "name": "My Cool Extension",
+  "name": "Finder",
+  "author": "tylerpharand",
   "version": "0.1",
   "content_scripts": [
     {
