@@ -2,7 +2,7 @@
 
 A Chrome extension to improve keyboard-only navigation on the web.
 
-![Finder preview](./misc/preview.gif)
+![Finder preview](./media/preview.gif)
 
 ## Installation Steps
 1) Visit `chrome://extensions` in your browser
